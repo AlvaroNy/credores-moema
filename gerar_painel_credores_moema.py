@@ -50,6 +50,7 @@ def main():
     regs.sort(key=lambda x:-x[6])
 
     tot_emp=sum(r[3] for r in regs); tot_liq=sum(r[4] for r in regs); tot_pago=sum(r[5] for r in regs)
+    tot_falta=max(tot_emp-tot_pago, 0)   # empenhado (comprometido) que ainda nao foi pago
     n=len(regs)
     porcat={}
     for r in regs:
@@ -84,7 +85,7 @@ h1{{font-size:26px;font-weight:800}} .sub{{color:#607d8b;margin:4px 0 18px;font-
 .kpis{{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:22px}}
 .kpi{{background:#fff;border-radius:14px;padding:16px 18px;box-shadow:0 2px 10px rgba(0,0,0,.05);border-left:5px solid {AZUL}}}
 .kpi .v{{font-size:22px;font-weight:800;margin-top:4px}} .kpi .l{{font-size:12px;color:#607d8b;text-transform:uppercase;letter-spacing:.4px}}
-.kpi.green{{border-color:{VERDE}}} .kpi.purple{{border-color:{ROXO}}} .kpi.gray{{border-color:{CINZA}}}
+.kpi.green{{border-color:{VERDE}}} .kpi.purple{{border-color:{ROXO}}} .kpi.gray{{border-color:{CINZA}}} .kpi.orange{{border-color:{LARANJA}}}
 .grid2{{display:grid;grid-template-columns:1.4fr 1fr;gap:18px;margin-bottom:22px}}
 @media(max-width:900px){{.grid2{{grid-template-columns:1fr}}}}
 .card{{background:#fff;border-radius:14px;padding:16px 18px;box-shadow:0 2px 10px rgba(0,0,0,.05)}}
@@ -111,6 +112,7 @@ tr:hover td{{background:#fafbfc}}
   <div class="kpi"><div class="l">Empenhado</div><div class="v">{fmt(tot_emp)}</div></div>
   <div class="kpi green"><div class="l">Liquidado</div><div class="v">{fmt(tot_liq)}</div></div>
   <div class="kpi green"><div class="l">Pago</div><div class="v">{fmt(tot_pago)}</div></div>
+  <div class="kpi orange"><div class="l">Falta pagar</div><div class="v">{fmt(tot_falta)}</div></div>
   <div class="kpi purple"><div class="l">Top 10 concentram</div><div class="v">{share10:.0f}%</div></div>
 </div>
 
@@ -135,7 +137,7 @@ tr:hover td{{background:#fafbfc}}
 
 <div class="foot">
   Dados extraídos do Portal da Transparência de Moema/MG · Despesas › Credores.<br>
-  "Empenhado" = comprometido · "Liquidado" = despesa efetivada · "Pago" = efetivamente pago. Tipo é uma classificação automática por heurística no nome (repasses a entes públicos e encargos separados dos fornecedores).
+  "Empenhado" = comprometido · "Liquidado" = despesa efetivada · "Pago" = efetivamente pago · "Falta pagar" = Empenhado − Pago (o que já foi comprometido mas ainda não saiu do caixa). Tipo é uma classificação automática por heurística no nome (repasses a entes públicos e encargos separados dos fornecedores).
 </div>
 
 <script>
