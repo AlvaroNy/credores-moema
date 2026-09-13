@@ -112,7 +112,7 @@ tr:hover td{{background:#fafbfc}}
   <div class="kpi"><div class="l">Empenhado</div><div class="v">{fmt(tot_emp)}</div></div>
   <div class="kpi green"><div class="l">Liquidado</div><div class="v">{fmt(tot_liq)}</div></div>
   <div class="kpi green"><div class="l">Pago</div><div class="v">{fmt(tot_pago)}</div></div>
-  <div class="kpi orange"><div class="l">Falta pagar</div><div class="v">{fmt(tot_falta)}</div></div>
+  <div class="kpi orange"><div class="l">Falta pagar (aprox.)</div><div class="v">{fmt(tot_falta)}</div></div>
   <div class="kpi purple"><div class="l">Top 10 concentram</div><div class="v">{share10:.0f}%</div></div>
 </div>
 
@@ -137,7 +137,7 @@ tr:hover td{{background:#fafbfc}}
 
 <div class="foot">
   Dados extraídos do Portal da Transparência de Moema/MG · Despesas › Credores.<br>
-  "Empenhado" = comprometido · "Liquidado" = despesa efetivada · "Pago" = efetivamente pago · "Falta pagar" = Empenhado − Pago (o que já foi comprometido mas ainda não saiu do caixa). Tipo é uma classificação automática por heurística no nome (repasses a entes públicos e encargos separados dos fornecedores).
+  "Empenhado" = comprometido · "Liquidado" = despesa efetivada · "Pago" = efetivamente pago · "Falta pagar (aprox.)" = Empenhado − Pago — estimativa, pois o Pago também inclui contas de anos anteriores (restos a pagar), que o portal não separa nesta tela. Tipo é uma classificação automática por heurística no nome (repasses a entes públicos e encargos separados dos fornecedores).
 </div>
 
 <script>
