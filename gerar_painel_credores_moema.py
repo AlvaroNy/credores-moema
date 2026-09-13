@@ -45,8 +45,9 @@ def main():
         pago=float(r.get("pago",0) or 0); liq=float(r.get("liquidado",0) or 0)
         emp=float(r.get("empenhado",0) or 0)
         ref=max(pago,liq)   # referência de gasto
+        falta=max(emp-pago,0)  # falta pagar (aprox.) = empenhado - pago
         regs.append([r["nome"].title() if r["nome"].isupper() else r["nome"],
-                     r["cnpj"], ORDEM.index(cat), round(emp,2), round(liq,2), round(pago,2), round(ref,2)])
+                     r["cnpj"], ORDEM.index(cat), round(emp,2), round(liq,2), round(pago,2), round(ref,2), round(falta,2)])
     regs.sort(key=lambda x:-x[6])
 
     tot_emp=sum(r[3] for r in regs); tot_liq=sum(r[4] for r in regs); tot_pago=sum(r[5] for r in regs)
@@ -130,7 +131,7 @@ tr:hover td{{background:#fafbfc}}
   <div style="overflow-x:auto">
   <table id="tab"><thead><tr>
     <th data-k="0">Credor</th><th data-k="1">CNPJ/CPF</th><th data-k="2">Tipo</th>
-    <th data-k="3" class="num">Empenhado</th><th data-k="4" class="num">Liquidado</th><th data-k="5" class="num">Pago</th>
+    <th data-k="3" class="num">Empenhado</th><th data-k="4" class="num">Liquidado</th><th data-k="5" class="num">Pago</th><th data-k="7" class="num">Falta pagar (aprox.)</th>
   </tr></thead><tbody id="corpo"></tbody></table>
   </div>
 </div>
@@ -141,7 +142,7 @@ tr:hover td{{background:#fafbfc}}
 </div>
 
 <script>
-const DADOS={J(regs)};   // [nome,cnpj,catIdx,emp,liq,pago,ref]
+const DADOS={J(regs)};   // [nome,cnpj,catIdx,emp,liq,pago,ref,falta]
 const CATS={J(ORDEM)};
 const CORES={J(CORES)};
 const fmt=v=>"R$ "+v.toLocaleString('pt-BR',{{minimumFractionDigits:2,maximumFractionDigits:2}});
@@ -161,9 +162,9 @@ function render(){{
   let rows=DADOS.filter(r=>filtro==='TODOS'||CATS[r[2]]===filtro);
   if(busca){{const q=busca.toLowerCase();rows=rows.filter(r=>r[0].toLowerCase().includes(q)||(r[1]||'').toLowerCase().includes(q));}}
   rows=rows.slice().sort((a,b)=>{{let x=a[sortk],y=b[sortk];if(typeof x==='string'){{x=x.toLowerCase();y=y.toLowerCase();}}return x<y?-sortdir:x>y?sortdir:0;}});
-  document.getElementById('corpo').innerHTML=rows.map(r=>`<tr><td>${{r[0]}}</td><td>${{r[1]||''}}</td><td>${{tag(r[2])}}</td><td class="num">${{fmt(r[3])}}</td><td class="num">${{fmt(r[4])}}</td><td class="num"><b>${{fmt(r[5])}}</b></td></tr>`).join('');
-  const sp=rows.reduce((s,r)=>s+r[5],0), sl=rows.reduce((s,r)=>s+r[4],0);
-  document.getElementById('contador').innerHTML=`<b>${{rows.length}}</b> credor(es) · liquidado ${{fmt(sl)}} · pago ${{fmt(sp)}}`;
+  document.getElementById('corpo').innerHTML=rows.map(r=>`<tr><td>${{r[0]}}</td><td>${{r[1]||''}}</td><td>${{tag(r[2])}}</td><td class="num">${{fmt(r[3])}}</td><td class="num">${{fmt(r[4])}}</td><td class="num"><b>${{fmt(r[5])}}</b></td><td class="num">${{fmt(r[7])}}</td></tr>`).join('');
+  const sp=rows.reduce((s,r)=>s+r[5],0), sl=rows.reduce((s,r)=>s+r[4],0), sf=rows.reduce((s,r)=>s+r[7],0);
+  document.getElementById('contador').innerHTML=`<b>${{rows.length}}</b> credor(es) · liquidado ${{fmt(sl)}} · pago ${{fmt(sp)}} · falta pagar ${{fmt(sf)}}`;
 }}
 const chips=['TODOS'].concat(CATS);
 const box=document.getElementById('chips');
