@@ -77,6 +77,14 @@ def main():
 
     page=f"""<!DOCTYPE html><html lang="pt-BR"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-WMZMY29YL0"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){{dataLayer.push(arguments);}}
+  gtag('js', new Date());
+  gtag('config', 'G-WMZMY29YL0');
+</script>
 <title>Credores · Prefeitura de Moema — {ano}</title>
 <script>{plotly}</script>
 <style>
