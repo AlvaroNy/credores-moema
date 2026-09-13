@@ -103,10 +103,55 @@ td.num{{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}}
 tr:hover td{{background:#fafbfc}}
 .count{{color:#607d8b;font-size:13px;margin:8px 2px}}
 .foot{{color:#90a4ae;font-size:12px;margin-top:18px;text-align:center;line-height:1.6}}
+/* --- telas de boas-vindas --- */
+.overlay{{position:fixed;inset:0;background:rgba(15,23,42,.80);display:flex;align-items:center;justify-content:center;z-index:9999;padding:20px}}
+.overlay .box{{background:#fff;border-radius:18px;max-width:460px;width:100%;padding:28px 26px;box-shadow:0 20px 60px rgba(0,0,0,.35);text-align:center}}
+.overlay h2{{font-size:20px;margin-bottom:12px;color:{TEXTO}}}
+.overlay p{{font-size:14.5px;color:#4b5563;line-height:1.6;margin-bottom:22px}}
+.ov-btns{{display:flex;flex-direction:column;gap:10px}}
+.ov-btn{{border:none;border-radius:12px;padding:14px 18px;font-size:15px;font-weight:700;cursor:pointer;background:{AZUL};color:#fff}}
+.ov-btn:hover{{filter:brightness(1.07)}}
+.ov-btn.alt{{background:#eef2f7;color:{TEXTO}}}
+.ov-btns.dev{{flex-direction:row}}
+.ov-btns.dev .ov-btn{{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;padding:20px 10px}}
+.ov-btn .ic{{font-size:30px}}
+.switcher{{text-align:right;margin:-6px 0 16px;font-size:13px}}
+.switcher a{{color:{AZUL};cursor:pointer;text-decoration:underline}}
+/* --- mini-cards (celular) --- */
+#cardsWrap{{display:none}}
+body.modo-mobile #tabWrap{{display:none}}
+body.modo-mobile #cardsWrap{{display:block}}
+.ccard{{background:#fff;border:1px solid #e6eaef;border-radius:12px;margin-bottom:8px;overflow:hidden}}
+.ccard-head{{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;cursor:pointer}}
+.ccard-head .nm{{font-weight:700;font-size:14px}}
+.ccard-head .cj{{font-size:12px;color:#607d8b;margin-top:2px}}
+.ccard-head .chev{{color:#9aa7b4;font-size:16px;transition:transform .15s}}
+.ccard.open .chev{{transform:rotate(180deg)}}
+.ccard-body{{padding:0 14px 12px;font-size:13.5px}}
+.ccard-body .lin{{display:flex;justify-content:space-between;gap:12px;padding:6px 0;border-top:1px solid #f0f3f7}}
+.ccard-body .lin .k{{color:#607d8b}}
+.ccard-body .lin .val{{font-weight:600;font-variant-numeric:tabular-nums;text-align:right}}
 </style></head><body>
+
+<div class="overlay" id="ov">
+  <div class="box" id="ovStep1">
+    <h2>⚠️ Aviso</h2>
+    <p>Todos os dados exibidos neste site foram obtidos no <b>Portal da Transparência</b> da Prefeitura Municipal de Moema/MG. É informação pública, reproduzida aqui apenas para facilitar a consulta.</p>
+    <div class="ov-btns"><button class="ov-btn" id="btnCiente">Sim, Estou Ciente</button></div>
+  </div>
+  <div class="box" id="ovStep2" hidden>
+    <h2>Como você está acessando?</h2>
+    <p>Escolha o dispositivo para ver o site no melhor formato.</p>
+    <div class="ov-btns dev">
+      <button class="ov-btn alt" id="btnCel"><span class="ic">📱</span>Celular</button>
+      <button class="ov-btn" id="btnPc"><span class="ic">💻</span>Computador</button>
+    </div>
+  </div>
+</div>
 
 <h1>Credores · {entidade.title()} — {ano}</h1>
 <div class="sub">Despesas por credor · período {periodo} · Portal da Transparência de Moema/MG · {n} credores</div>
+<div class="switcher"><a id="switchLink"></a></div>
 
 <div class="kpis">
   <div class="kpi gray"><div class="l">Credores</div><div class="v">{n}</div></div>
@@ -128,12 +173,13 @@ tr:hover td{{background:#fafbfc}}
     <span id="chips"></span>
   </div>
   <div class="count" id="contador"></div>
-  <div style="overflow-x:auto">
+  <div id="tabWrap" style="overflow-x:auto">
   <table id="tab"><thead><tr>
     <th data-k="0">Credor</th><th data-k="1">CNPJ/CPF</th><th data-k="2">Tipo</th>
     <th data-k="3" class="num">Empenhado</th><th data-k="4" class="num">Liquidado</th><th data-k="5" class="num">Pago</th><th data-k="7" class="num">Falta pagar (aprox.)</th>
   </tr></thead><tbody id="corpo"></tbody></table>
   </div>
+  <div id="cardsWrap"></div>
 </div>
 
 <div class="foot">
@@ -163,9 +209,25 @@ function render(){{
   if(busca){{const q=busca.toLowerCase();rows=rows.filter(r=>r[0].toLowerCase().includes(q)||(r[1]||'').toLowerCase().includes(q));}}
   rows=rows.slice().sort((a,b)=>{{let x=a[sortk],y=b[sortk];if(typeof x==='string'){{x=x.toLowerCase();y=y.toLowerCase();}}return x<y?-sortdir:x>y?sortdir:0;}});
   document.getElementById('corpo').innerHTML=rows.map(r=>`<tr><td>${{r[0]}}</td><td>${{r[1]||''}}</td><td>${{tag(r[2])}}</td><td class="num">${{fmt(r[3])}}</td><td class="num">${{fmt(r[4])}}</td><td class="num"><b>${{fmt(r[5])}}</b></td><td class="num">${{fmt(r[7])}}</td></tr>`).join('');
+  document.getElementById('cardsWrap').innerHTML=rows.map(r=>`<div class="ccard"><div class="ccard-head"><div><div class="nm">${{r[0]}}</div><div class="cj">${{r[1]||'—'}}</div></div><span class="chev">▾</span></div><div class="ccard-body" hidden><div class="lin"><span class="k">Tipo</span><span class="val">${{CATS[r[2]]}}</span></div><div class="lin"><span class="k">Empenhado</span><span class="val">${{fmt(r[3])}}</span></div><div class="lin"><span class="k">Liquidado</span><span class="val">${{fmt(r[4])}}</span></div><div class="lin"><span class="k">Pago</span><span class="val">${{fmt(r[5])}}</span></div><div class="lin"><span class="k">Falta pagar (aprox.)</span><span class="val">${{fmt(r[7])}}</span></div></div></div>`).join('');
   const sp=rows.reduce((s,r)=>s+r[5],0), sl=rows.reduce((s,r)=>s+r[4],0), sf=rows.reduce((s,r)=>s+r[7],0);
   document.getElementById('contador').innerHTML=`<b>${{rows.length}}</b> credor(es) · liquidado ${{fmt(sl)}} · pago ${{fmt(sp)}} · falta pagar ${{fmt(sf)}}`;
 }}
+// acordeão dos mini-cards (celular)
+document.getElementById('cardsWrap').addEventListener('click',e=>{{
+  const head=e.target.closest('.ccard-head'); if(!head)return;
+  const card=head.parentElement, body=card.querySelector('.ccard-body');
+  const open=card.classList.toggle('open'); body.hidden=!open;
+}});
+// telas de boas-vindas + troca de versão
+let modo='desktop';
+function aplicaModo(m){{modo=m;document.body.classList.toggle('modo-mobile',m==='mobile');
+  document.getElementById('switchLink').textContent=(m==='mobile')?'💻 Ver versão computador':'📱 Ver versão celular';}}
+document.getElementById('switchLink').onclick=()=>aplicaModo(modo==='mobile'?'desktop':'mobile');
+document.getElementById('btnCiente').onclick=()=>{{document.getElementById('ovStep1').hidden=true;document.getElementById('ovStep2').hidden=false;}};
+document.getElementById('btnCel').onclick=()=>{{aplicaModo('mobile');document.getElementById('ov').style.display='none';}};
+document.getElementById('btnPc').onclick=()=>{{aplicaModo('desktop');document.getElementById('ov').style.display='none';}};
+aplicaModo('desktop');
 const chips=['TODOS'].concat(CATS);
 const box=document.getElementById('chips');
 chips.forEach(c=>{{const el=document.createElement('span');el.className='chip'+(c==='TODOS'?' active':'');el.textContent=c;
