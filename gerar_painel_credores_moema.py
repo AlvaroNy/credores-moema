@@ -130,7 +130,12 @@ body.modo-mobile #cardsWrap{{display:block}}
 .ccard-body{{padding:0 14px 12px;font-size:13.5px}}
 .ccard-body .lin{{display:flex;justify-content:space-between;gap:12px;padding:6px 0;border-top:1px solid #f0f3f7}}
 .ccard-body .lin .k{{color:#607d8b}}
-.ccard-body .lin .val{{font-weight:600;font-variant-numeric:tabular-nums;text-align:right}}
+.ccard-body .lin .val{{font-weight:700;font-variant-numeric:tabular-nums;text-align:right}}
+.ccard-body .lin .val.emp{{color:{AZUL}}}
+.ccard-body .lin .val.liq{{color:{VERDE}}}
+.ccard-body .lin .val.pago{{color:#137333}}
+.ccard-body .lin .val.falta{{color:{LARANJA}}}
+.ccard-body .lin .val.zero{{color:#9aa7b4}}
 </style></head><body>
 
 <div class="overlay" id="ov">
@@ -209,7 +214,7 @@ function render(){{
   if(busca){{const q=busca.toLowerCase();rows=rows.filter(r=>r[0].toLowerCase().includes(q)||(r[1]||'').toLowerCase().includes(q));}}
   rows=rows.slice().sort((a,b)=>{{let x=a[sortk],y=b[sortk];if(typeof x==='string'){{x=x.toLowerCase();y=y.toLowerCase();}}return x<y?-sortdir:x>y?sortdir:0;}});
   document.getElementById('corpo').innerHTML=rows.map(r=>`<tr><td>${{r[0]}}</td><td>${{r[1]||''}}</td><td>${{tag(r[2])}}</td><td class="num">${{fmt(r[3])}}</td><td class="num">${{fmt(r[4])}}</td><td class="num"><b>${{fmt(r[5])}}</b></td><td class="num">${{fmt(r[7])}}</td></tr>`).join('');
-  document.getElementById('cardsWrap').innerHTML=rows.map(r=>`<div class="ccard"><div class="ccard-head"><div><div class="nm">${{r[0]}}</div><div class="cj">${{r[1]||'—'}}</div></div><span class="chev">▾</span></div><div class="ccard-body" hidden><div class="lin"><span class="k">Tipo</span><span class="val">${{CATS[r[2]]}}</span></div><div class="lin"><span class="k">Empenhado</span><span class="val">${{fmt(r[3])}}</span></div><div class="lin"><span class="k">Liquidado</span><span class="val">${{fmt(r[4])}}</span></div><div class="lin"><span class="k">Pago</span><span class="val">${{fmt(r[5])}}</span></div><div class="lin"><span class="k">Falta pagar (aprox.)</span><span class="val">${{fmt(r[7])}}</span></div></div></div>`).join('');
+  document.getElementById('cardsWrap').innerHTML=rows.map(r=>`<div class="ccard" style="border-left:4px solid ${{CORES[CATS[r[2]]]}}"><div class="ccard-head"><div><div class="nm">${{r[0]}}</div><div class="cj">${{r[1]||'—'}}</div></div><span class="chev">▾</span></div><div class="ccard-body" hidden><div class="lin"><span class="k">Tipo</span><span class="val">${{tag(r[2])}}</span></div><div class="lin"><span class="k">Empenhado</span><span class="val emp">${{fmt(r[3])}}</span></div><div class="lin"><span class="k">Liquidado</span><span class="val liq">${{fmt(r[4])}}</span></div><div class="lin"><span class="k">Pago</span><span class="val pago">${{fmt(r[5])}}</span></div><div class="lin"><span class="k">Falta pagar (aprox.)</span><span class="val ${{r[7]>0?'falta':'zero'}}">${{fmt(r[7])}}</span></div></div></div>`).join('');
   const sp=rows.reduce((s,r)=>s+r[5],0), sl=rows.reduce((s,r)=>s+r[4],0), sf=rows.reduce((s,r)=>s+r[7],0);
   document.getElementById('contador').innerHTML=`<b>${{rows.length}}</b> credor(es) · liquidado ${{fmt(sl)}} · pago ${{fmt(sp)}} · falta pagar ${{fmt(sf)}}`;
 }}
