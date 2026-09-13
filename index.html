@@ -51,6 +51,7 @@ tr:hover td{background:#fafbfc}
 #cardsWrap{display:none}
 body.modo-mobile #tabWrap{display:none}
 body.modo-mobile #cardsWrap{display:block}
+body.modo-mobile #chips{display:none}
 .ccard{background:#fff;border:1px solid #e6eaef;border-radius:12px;margin-bottom:8px;overflow:hidden}
 .ccard-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;cursor:pointer}
 .ccard-head .nm{font-weight:700;font-size:14px}
@@ -157,7 +158,11 @@ document.getElementById('cardsWrap').addEventListener('click',e=>{
 // telas de boas-vindas + troca de versão
 let modo='desktop';
 function aplicaModo(m){modo=m;document.body.classList.toggle('modo-mobile',m==='mobile');
-  document.getElementById('switchLink').textContent=(m==='mobile')?'💻 Ver versão computador':'📱 Ver versão celular';}
+  document.getElementById('switchLink').textContent=(m==='mobile')?'💻 Ver versão computador':'📱 Ver versão celular';
+  // no celular não há pré-filtros: consulta sempre em "TODOS" (só a busca vale)
+  filtro='TODOS';
+  document.querySelectorAll('.chip').forEach(x=>{const t=x.textContent==='TODOS';x.classList.toggle('active',t);x.style.background=t?'#1f2933':'#fff';x.style.color=t?'#fff':'#1f2933';x.style.borderColor=t?'transparent':'#d0d7de';});
+  if(typeof render==='function') render();}
 document.getElementById('switchLink').onclick=()=>aplicaModo(modo==='mobile'?'desktop':'mobile');
 document.getElementById('btnCiente').onclick=()=>{document.getElementById('ovStep1').hidden=true;document.getElementById('ovStep2').hidden=false;};
 document.getElementById('btnCel').onclick=()=>{aplicaModo('mobile');document.getElementById('ov').style.display='none';};
