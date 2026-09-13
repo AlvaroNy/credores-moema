@@ -122,6 +122,7 @@ tr:hover td{{background:#fafbfc}}
 body.modo-mobile #tabWrap{{display:none}}
 body.modo-mobile #cardsWrap{{display:block}}
 body.modo-mobile #chips{{display:none}}
+body.modo-mobile #graficos{{display:none}}
 .ccard{{background:#fff;border:1px solid #e6eaef;border-radius:12px;margin-bottom:8px;overflow:hidden}}
 .ccard-head{{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;cursor:pointer}}
 .ccard-head .nm{{font-weight:700;font-size:14px}}
@@ -168,7 +169,7 @@ body.modo-mobile #chips{{display:none}}
   <div class="kpi purple"><div class="l">Top 10 concentram</div><div class="v">{share10:.0f}%</div></div>
 </div>
 
-<div class="grid2">
+<div class="grid2" id="graficos">
   <div class="card"><h3>Top 15 maiores credores</h3><div id="top" style="height:430px"></div></div>
   <div class="card"><h3>Gasto por tipo de credor</h3><div id="donut" style="height:430px"></div></div>
 </div>
