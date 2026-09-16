@@ -6,7 +6,10 @@ Gera um painel HTML self-contained dos CREDORES da Prefeitura de Moema/MG
 Adiciona um SELETOR DE ANO no topo (alterna entre os anos disponíveis).
 Saída: index.html (pronto para GitHub Pages).
 """
-import json, os, sys, glob
+import json, os, sys, glob, unicodedata
+
+def _sa(s):  # strip acentos + upper, para casar nomes
+    return ''.join(c for c in unicodedata.normalize('NFD', s or '') if unicodedata.category(c)!='Mn').upper().strip()
 
 try: sys.stdout.reconfigure(encoding="utf-8")
 except Exception: pass
@@ -38,7 +41,10 @@ def parse_regs(d):
         cat=categoria(r["nome"])
         pago=float(r.get("pago",0) or 0); liq=float(r.get("liquidado",0) or 0); emp=float(r.get("empenhado",0) or 0)
         ref=max(pago,liq); falta=max(emp-pago,0)
-        nome=r["nome"].title() if r["nome"].isupper() else r["nome"]
+        if _sa(r["nome"])=="MUNICIPIO DE MOEMA":
+            nome="Município de Moema — Folha de Pagamento"
+        else:
+            nome=r["nome"].title() if r["nome"].isupper() else r["nome"]
         regs.append([nome, r["cnpj"], ORDEM.index(cat), round(emp,2), round(liq,2), round(pago,2), round(ref,2), round(falta,2)])
     regs.sort(key=lambda x:-x[6])
     return regs
