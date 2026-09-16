@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 """
 Gera um painel HTML self-contained dos CREDORES da Prefeitura de Moema/MG
-(despesas por credor) a partir de credores_moema_<ano>.json.
+(despesas por credor) a partir de TODOS os credores_moema_<ano>.json presentes.
 
+Adiciona um SELETOR DE ANO no topo (alterna entre os anos disponíveis).
 Saída: index.html (pronto para GitHub Pages).
 """
 import json, os, sys, glob
@@ -31,49 +32,31 @@ def categoria(nome):
 CORES={"Fornecedor":AZUL,"Ente público/Repasse":ROXO,"Encargos/Tributos":LARANJA}
 ORDEM=["Fornecedor","Ente público/Repasse","Encargos/Tributos"]
 
-def fmt(v): return "R$ "+f"{v:,.2f}".replace(",","X").replace(".",",").replace("X",".")
-
-def main():
-    arqs=sorted(glob.glob(os.path.join(HERE,"credores_moema_*.json")), reverse=True)
-    if not arqs:
-        print("Nenhum credores_moema_*.json encontrado. Rode extrair_credores_moema.py antes."); return
-    d=json.load(open(arqs[0],encoding="utf-8"))
-    ano=d["ano"]; entidade=d["entidade"]; periodo=d["periodo"]
+def parse_regs(d):
     regs=[]
     for r in d["registros"]:
         cat=categoria(r["nome"])
-        pago=float(r.get("pago",0) or 0); liq=float(r.get("liquidado",0) or 0)
-        emp=float(r.get("empenhado",0) or 0)
-        ref=max(pago,liq)   # referência de gasto
-        falta=max(emp-pago,0)  # falta pagar (aprox.) = empenhado - pago
-        regs.append([r["nome"].title() if r["nome"].isupper() else r["nome"],
-                     r["cnpj"], ORDEM.index(cat), round(emp,2), round(liq,2), round(pago,2), round(ref,2), round(falta,2)])
+        pago=float(r.get("pago",0) or 0); liq=float(r.get("liquidado",0) or 0); emp=float(r.get("empenhado",0) or 0)
+        ref=max(pago,liq); falta=max(emp-pago,0)
+        nome=r["nome"].title() if r["nome"].isupper() else r["nome"]
+        regs.append([nome, r["cnpj"], ORDEM.index(cat), round(emp,2), round(liq,2), round(pago,2), round(ref,2), round(falta,2)])
     regs.sort(key=lambda x:-x[6])
+    return regs
 
-    tot_emp=sum(r[3] for r in regs); tot_liq=sum(r[4] for r in regs); tot_pago=sum(r[5] for r in regs)
-    tot_falta=max(tot_emp-tot_pago, 0)   # empenhado (comprometido) que ainda nao foi pago
-    n=len(regs)
-    porcat={}
-    for r in regs:
-        c=ORDEM[r[2]]; a=porcat.setdefault(c,{"n":0,"pago":0.0,"liq":0.0,"ref":0.0})
-        a["n"]+=1; a["pago"]+=r[5]; a["liq"]+=r[4]; a["ref"]+=r[6]
-    cats=[c for c in ORDEM if c in porcat]
-
-    # top 15 por ref
-    top=regs[:15]
-    top_nomes=[r[0][:38] for r in top][::-1]
-    top_vals=[r[6] for r in top][::-1]
-    top_cols=[CORES[ORDEM[r[2]]] for r in top][::-1]
-
-    donut_labels=cats
-    donut_vals=[round(porcat[c]["ref"],2) for c in cats]
-    donut_cols=[CORES[c] for c in cats]
+def main():
+    arqs=glob.glob(os.path.join(HERE,"credores_moema_*.json"))
+    if not arqs:
+        print("Nenhum credores_moema_*.json encontrado. Rode extrair_credores_moema.py antes."); return
+    REGP={}; META={}
+    for a in arqs:
+        d=json.load(open(a,encoding="utf-8"))
+        ano=str(d["ano"])
+        REGP[ano]=parse_regs(d)
+        META[ano]={"entidade":d["entidade"].title(),"periodo":d["periodo"]}
+    anos=sorted(REGP.keys(), reverse=True)
 
     plotly=open(PLOTLY,encoding="utf-8").read()
     J=lambda o: json.dumps(o, ensure_ascii=False)
-
-    # concentração top 10
-    top10=sum(r[6] for r in regs[:10]); share10=100*top10/ (sum(r[6] for r in regs) or 1)
 
     page=f"""<!DOCTYPE html><html lang="pt-BR"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
@@ -85,12 +68,16 @@ def main():
   gtag('js', new Date());
   gtag('config', 'G-WMZMY29YL0');
 </script>
-<title>Credores · Prefeitura de Moema — {ano}</title>
+<title>Credores · Prefeitura de Moema</title>
 <script>{plotly}</script>
 <style>
 *{{box-sizing:border-box;margin:0;padding:0}}
 body{{font-family:'Segoe UI',system-ui,Arial,sans-serif;background:#f4f6f9;color:{TEXTO};padding:24px;max-width:1280px;margin:auto}}
-h1{{font-size:26px;font-weight:800}} .sub{{color:#607d8b;margin:4px 0 18px;font-size:14px}}
+h1{{font-size:26px;font-weight:800}} .sub{{color:#607d8b;margin:4px 0 14px;font-size:14px}}
+.topbar{{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-bottom:18px}}
+.yearsel{{display:flex;align-items:center;gap:8px;background:{AZUL};color:#fff;padding:8px 14px;border-radius:12px;font-weight:700;box-shadow:0 3px 12px rgba(26,115,232,.28)}}
+.yearsel select{{font-size:17px;font-weight:800;border:none;border-radius:8px;padding:6px 10px;cursor:pointer;color:{TEXTO}}}
+.topbar .switchlink{{margin-left:auto;color:{AZUL};cursor:pointer;text-decoration:underline;font-size:13px}}
 .kpis{{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:22px}}
 .kpi{{background:#fff;border-radius:14px;padding:16px 18px;box-shadow:0 2px 10px rgba(0,0,0,.05);border-left:5px solid {AZUL}}}
 .kpi .v{{font-size:22px;font-weight:800;margin-top:4px}} .kpi .l{{font-size:12px;color:#607d8b;text-transform:uppercase;letter-spacing:.4px}}
@@ -123,8 +110,6 @@ tr:hover td{{background:#fafbfc}}
 .ov-btns.dev{{flex-direction:row}}
 .ov-btns.dev .ov-btn{{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;padding:20px 10px}}
 .ov-btn .ic{{font-size:30px}}
-.switcher{{text-align:right;margin:-6px 0 16px;font-size:13px}}
-.switcher a{{color:{AZUL};cursor:pointer;text-decoration:underline}}
 /* --- mini-cards (celular) --- */
 #cardsWrap{{display:none}}
 body.modo-mobile #tabWrap{{display:none}}
@@ -164,18 +149,15 @@ body.modo-mobile #graficos{{display:none}}
   </div>
 </div>
 
-<h1>Credores · {entidade.title()} — {ano}</h1>
-<div class="sub">Despesas por credor · período {periodo} · Portal da Transparência de Moema/MG · {n} credores</div>
-<div class="switcher"><a id="switchLink"></a></div>
+<h1 id="titulo">Credores · Prefeitura de Moema</h1>
+<div class="sub" id="sub"></div>
 
-<div class="kpis">
-  <div class="kpi gray"><div class="l">Credores</div><div class="v">{n}</div></div>
-  <div class="kpi"><div class="l">Empenhado</div><div class="v">{fmt(tot_emp)}</div></div>
-  <div class="kpi green"><div class="l">Liquidado</div><div class="v">{fmt(tot_liq)}</div></div>
-  <div class="kpi green"><div class="l">Pago</div><div class="v">{fmt(tot_pago)}</div></div>
-  <div class="kpi orange"><div class="l">Falta pagar (aprox.)</div><div class="v">{fmt(tot_falta)}</div></div>
-  <div class="kpi purple"><div class="l">Top 10 concentram</div><div class="v">{share10:.0f}%</div></div>
+<div class="topbar">
+  <div class="yearsel"><label for="ano">Ano:</label><select id="ano"></select></div>
+  <a id="switchLink" class="switchlink"></a>
 </div>
+
+<div class="kpis" id="kpis"></div>
 
 <div class="grid2" id="graficos">
   <div class="card"><h3>Top 15 maiores credores</h3><div id="top" style="height:430px"></div></div>
@@ -203,24 +185,46 @@ body.modo-mobile #graficos{{display:none}}
 </div>
 
 <script>
-const DADOS={J(regs)};   // [nome,cnpj,catIdx,emp,liq,pago,ref,falta]
+const ANOS={J(anos)};
+const REGP={J(REGP)};      // ano -> [[nome,cnpj,catIdx,emp,liq,pago,ref,falta], ...]
+const META={J(META)};      // ano -> {{entidade,periodo}}
 const CATS={J(ORDEM)};
 const CORES={J(CORES)};
 const fmt=v=>"R$ "+v.toLocaleString('pt-BR',{{minimumFractionDigits:2,maximumFractionDigits:2}});
 const fmtk=v=>v>=1e6?("R$ "+(v/1e6).toFixed(2)+" mi"):(v>=1e3?("R$ "+(v/1e3).toFixed(0)+" mil"):("R$ "+v.toFixed(0)));
 
-Plotly.newPlot('top',[{{type:'bar',orientation:'h',y:{J(top_nomes)},x:{J(top_vals)},
-  marker:{{color:{J(top_cols)}}},text:{J(top_vals)}.map(fmtk),textposition:'auto'}}],
-  {{margin:{{t:10,b:30,l:180,r:20}}}},{{displayModeBar:false,responsive:true}});
-
-Plotly.newPlot('donut',[{{type:'pie',hole:.55,labels:{J(donut_labels)},values:{J(donut_vals)},
-  marker:{{colors:{J(donut_cols)}}},textinfo:'label+percent',textposition:'inside',sort:false}}],
-  {{margin:{{t:10,b:10,l:10,r:10}},showlegend:false}},{{displayModeBar:false,responsive:true}});
-
-let filtro='TODOS', busca='', sortk=5, sortdir=-1;
+let ano=ANOS[0], filtro='TODOS', busca='', sortk=5, sortdir=-1;
 function tag(ci){{const c=CATS[ci];return `<span class="tag" style="background:${{CORES[c]}}">${{c}}</span>`;}}
+function dados(){{return REGP[ano];}}
+
+function renderResumo(){{
+  const rows=dados();
+  let emp=0,liq=0,pago=0; const porcat={{}};
+  rows.forEach(r=>{{emp+=r[3];liq+=r[4];pago+=r[5];const c=CATS[r[2]];(porcat[c]=porcat[c]||{{n:0,ref:0}}).n++;porcat[c].ref+=r[6];}});
+  const n=rows.length, falta=Math.max(emp-pago,0);
+  const byref=rows.slice().sort((a,b)=>b[6]-a[6]);
+  const totref=byref.reduce((s,r)=>s+r[6],0)||1, top10=byref.slice(0,10).reduce((s,r)=>s+r[6],0);
+  document.getElementById('titulo').textContent=`Credores · ${{META[ano].entidade}} — ${{ano}}`;
+  document.getElementById('sub').textContent=`Despesas por credor · período ${{META[ano].periodo}} · Portal da Transparência de Moema/MG · ${{n}} credores`;
+  document.getElementById('kpis').innerHTML=`
+    <div class="kpi gray"><div class="l">Credores</div><div class="v">${{n}}</div></div>
+    <div class="kpi"><div class="l">Empenhado</div><div class="v">${{fmt(emp)}}</div></div>
+    <div class="kpi green"><div class="l">Liquidado</div><div class="v">${{fmt(liq)}}</div></div>
+    <div class="kpi green"><div class="l">Pago</div><div class="v">${{fmt(pago)}}</div></div>
+    <div class="kpi orange"><div class="l">Falta pagar (aprox.)</div><div class="v">${{fmt(falta)}}</div></div>
+    <div class="kpi purple"><div class="l">Top 10 concentram</div><div class="v">${{Math.round(100*top10/totref)}}%</div></div>`;
+  const cats=CATS.filter(c=>porcat[c]);
+  const t15=byref.slice(0,15);
+  Plotly.react('top',[{{type:'bar',orientation:'h',y:t15.map(r=>r[0].slice(0,38)).reverse(),x:t15.map(r=>r[6]).reverse(),
+    marker:{{color:t15.map(r=>CORES[CATS[r[2]]]).reverse()}},text:t15.map(r=>fmtk(r[6])).reverse(),textposition:'auto'}}],
+    {{margin:{{t:10,b:30,l:180,r:20}}}},{{displayModeBar:false,responsive:true}});
+  Plotly.react('donut',[{{type:'pie',hole:.55,labels:cats,values:cats.map(c=>porcat[c].ref),
+    marker:{{colors:cats.map(c=>CORES[c])}},textinfo:'label+percent',textposition:'inside',sort:false}}],
+    {{margin:{{t:10,b:10,l:10,r:10}},showlegend:false}},{{displayModeBar:false,responsive:true}});
+}}
+
 function render(){{
-  let rows=DADOS.filter(r=>filtro==='TODOS'||CATS[r[2]]===filtro);
+  let rows=dados().filter(r=>filtro==='TODOS'||CATS[r[2]]===filtro);
   if(busca){{const q=busca.toLowerCase();rows=rows.filter(r=>r[0].toLowerCase().includes(q)||(r[1]||'').toLowerCase().includes(q));}}
   rows=rows.slice().sort((a,b)=>{{let x=a[sortk],y=b[sortk];if(typeof x==='string'){{x=x.toLowerCase();y=y.toLowerCase();}}return x<y?-sortdir:x>y?sortdir:0;}});
   document.getElementById('corpo').innerHTML=rows.map(r=>`<tr><td>${{r[0]}}</td><td>${{r[1]||''}}</td><td>${{tag(r[2])}}</td><td class="num">${{fmt(r[3])}}</td><td class="num">${{fmt(r[4])}}</td><td class="num"><b>${{fmt(r[5])}}</b></td><td class="num">${{fmt(r[7])}}</td></tr>`).join('');
@@ -228,25 +232,34 @@ function render(){{
   const sp=rows.reduce((s,r)=>s+r[5],0), sl=rows.reduce((s,r)=>s+r[4],0), sf=rows.reduce((s,r)=>s+r[7],0);
   document.getElementById('contador').innerHTML=`<b>${{rows.length}}</b> credor(es) · liquidado ${{fmt(sl)}} · pago ${{fmt(sp)}} · falta pagar ${{fmt(sf)}}`;
 }}
+function renderAll(){{renderResumo();render();}}
+
+// seletor de ano
+const selAno=document.getElementById('ano');
+ANOS.forEach(a=>{{const o=document.createElement('option');o.value=a;o.textContent=a;selAno.appendChild(o);}});
+selAno.value=ano;
+selAno.onchange=()=>{{ano=selAno.value;busca='';document.getElementById('busca').value='';renderAll();}};
+
 // acordeão dos mini-cards (celular)
 document.getElementById('cardsWrap').addEventListener('click',e=>{{
   const head=e.target.closest('.ccard-head'); if(!head)return;
   const card=head.parentElement, body=card.querySelector('.ccard-body');
   const open=card.classList.toggle('open'); body.hidden=!open;
 }});
+
 // telas de boas-vindas + troca de versão
 let modo='desktop';
 function aplicaModo(m){{modo=m;document.body.classList.toggle('modo-mobile',m==='mobile');
   document.getElementById('switchLink').textContent=(m==='mobile')?'💻 Ver versão computador':'📱 Ver versão celular';
-  // no celular não há pré-filtros: consulta sempre em "TODOS" (só a busca vale)
   filtro='TODOS';
   document.querySelectorAll('.chip').forEach(x=>{{const t=x.textContent==='TODOS';x.classList.toggle('active',t);x.style.background=t?'#1f2933':'#fff';x.style.color=t?'#fff':'#1f2933';x.style.borderColor=t?'transparent':'#d0d7de';}});
-  if(typeof render==='function') render();}}
+  render();}}
 document.getElementById('switchLink').onclick=()=>aplicaModo(modo==='mobile'?'desktop':'mobile');
 document.getElementById('btnCiente').onclick=()=>{{document.getElementById('ovStep1').hidden=true;document.getElementById('ovStep2').hidden=false;}};
 document.getElementById('btnCel').onclick=()=>{{aplicaModo('mobile');document.getElementById('ov').style.display='none';}};
 document.getElementById('btnPc').onclick=()=>{{aplicaModo('desktop');document.getElementById('ov').style.display='none';}};
-aplicaModo('desktop');
+
+// chips de tipo
 const chips=['TODOS'].concat(CATS);
 const box=document.getElementById('chips');
 chips.forEach(c=>{{const el=document.createElement('span');el.className='chip'+(c==='TODOS'?' active':'');el.textContent=c;
@@ -255,11 +268,14 @@ chips.forEach(c=>{{const el=document.createElement('span');el.className='chip'+(
   box.appendChild(el);}});
 document.getElementById('busca').addEventListener('input',e=>{{busca=e.target.value;render();}});
 document.querySelectorAll('#tab th').forEach(th=>th.onclick=()=>{{const k=+th.dataset.k;if(sortk===k)sortdir*=-1;else{{sortk=k;sortdir=(k<3)?1:-1;}}render();}});
-render();
+
+aplicaModo('desktop');
+renderAll();
 </script>
 </body></html>"""
     open(SAIDA,"w",encoding="utf-8").write(page)
-    print(f"OK -> {SAIDA}  ({os.path.getsize(SAIDA)/1048576:.1f} MB · {n} credores · ano {ano})")
+    tot=sum(len(v) for v in REGP.values())
+    print(f"OK -> {SAIDA}  ({os.path.getsize(SAIDA)/1048576:.1f} MB · anos {', '.join(anos)} · {tot} registros)")
 
 if __name__=="__main__":
     main()

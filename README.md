@@ -36,9 +36,11 @@ qualquer navegador.
 ## Escopo dos dados
 
 - Fonte: Portal da Transparência de Moema → **Despesas › Credores**.
-- Carga inicial: **ano de 2026, Consolidada** (Prefeitura + Câmara + SAAE),
-  período 01/01 a 31/12 — 846 credores.
-- Dá para puxar outros anos (2021–2026) e por entidade separada.
+- Anos carregados: **2025** (1.055 credores) e **2026** (Consolidada = Prefeitura +
+  Câmara + SAAE), período 01/01 a 31/12 de cada ano. Há um **seletor de ano** no
+  topo que troca todo o painel.
+- Dá para puxar outros anos (2021–2026) e por entidade separada — cada ano vira um
+  arquivo `credores_moema_<ano>.json` e aparece automaticamente no seletor.
 
 ## Como atualizar / gerar outro ano
 
@@ -50,11 +52,12 @@ python extrair_credores_moema.py 2026        # ano (default 2026), Consolidada
 python extrair_credores_moema.py 2025        # outro ano
 python extrair_credores_moema.py 2026 0      # ano + unidade (0=Prefeitura,1=Camara,2=SAAE,-1=Consolidada)
 
-# Regenera o dashboard (usa o JSON mais recente) -> index.html
+# Regenera o dashboard (carrega TODOS os credores_moema_*.json) -> index.html
 python gerar_painel_credores_moema.py
 ```
 
-Depois é só commitar `index.html` (e o `.json`); o GitHub Pages republica sozinho.
+O gerador junta todos os anos presentes na pasta e monta o seletor sozinho.
+Depois é só commitar `index.html` (e os `.json`); o GitHub Pages republica sozinho.
 
 ## Requisitos
 
